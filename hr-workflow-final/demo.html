@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<title>HR Workflow Designer — Tredence Studio</title>
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:14px;color:#0f172a;background:#f8fafc;height:100vh;overflow:hidden}
+#root{height:100vh;display:flex;flex-direction:column}
+.app{display:flex;flex-direction:column;height:100vh}
+/* Toolbar */
+.toolbar{display:flex;align-items:center;justify-content:space-between;padding:0 20px;height:52px;background:#fff;border-bottom:1px solid #e2e8f0;flex-shrink:0;z-index:10}
+.brand{display:flex;align-items:center;gap:10px}
+.logo{font-size:20px;color:#6366f1}
+.brand-title{font-size:15px;font-weight:600;color:#0f172a;line-height:1.2}
+.brand-sub{font-size:11px;color:#94a3b8}
+.actions{display:flex;align-items:center;gap:8px}
+.divider{width:1px;height:20px;background:#e2e8f0;margin:0 4px}
+.btn{display:flex;align-items:center;gap:5px;padding:6px 13px;border:1px solid #e2e8f0;border-radius:6px;background:#fff;color:#374151;font-size:12px;font-weight:500;cursor:pointer;transition:all .15s}
+.btn:hover{background:#f1f5f9;border-color:#cbd5e1}
+.btn-primary{background:#6366f1;color:#fff;border-color:#6366f1}
+.btn-primary:hover{background:#4f46e5;border-color:#4f46e5}
+.btn-sm{padding:4px 10px;font-size:11px}
+/* Layout */
+.main{display:flex;flex:1;overflow:hidden}
+/* Palette */
+.palette{width:190px;flex-shrink:0;background:#fff;border-right:1px solid #e2e8f0;padding:14px 10px;overflow-y:auto}
+.sec-title{font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.08em;margin-bottom:2px}
+.sec-hint{font-size:10px;color:#cbd5e1;margin-bottom:12px}
+.pal-list{display:flex;flex-direction:column;gap:5px}
+.pal-item{display:flex;align-items:center;gap:8px;padding:9px;border:1px solid #e2e8f0;border-left-width:3px;border-radius:6px;background:#fff;cursor:grab;user-select:none;transition:all .15s}
+.pal-item:hover{background:#f8fafc;box-shadow:0 2px 8px rgba(0,0,0,.07);transform:translateY(-1px)}
+.pal-icon{font-size:14px;flex-shrink:0}
+.pal-label{font-size:11px;font-weight:600;color:#1e293b;line-height:1.3}
+.pal-desc{font-size:10px;color:#94a3b8;line-height:1.3;margin-top:1px}
+/* Canvas */
+.canvas-wrap{flex:1;position:relative;overflow:hidden;background:#f8fafc}
+.canvas-svg{width:100%;height:100%}
+.canvas-tip{position:absolute;bottom:14px;left:50%;transform:translateX(-50%);background:rgba(15,23,42,.7);color:#fff;padding:5px 14px;border-radius:20px;font-size:11px;pointer-events:none;white-space:nowrap}
+/* Nodes */
+.wf-node{cursor:pointer;user-select:none}
+.node-box{fill:#fff;stroke:#e2e8f0;stroke-width:1;rx:8}
+.node-box-sel{stroke:#6366f1;stroke-width:2}
+.node-accent{rx:8}
+.node-kind{font-size:9px;font-weight:700;letter-spacing:.08em;fill-opacity:.9}
+.node-title{font-size:12px;font-weight:600;fill:#1e293b}
+.node-sub{font-size:10px;fill:#64748b}
+/* Edge */
+.edge{fill:none;stroke:#94a3b8;stroke-width:1.5;marker-end:url(#arrow)}
+.edge-animated{stroke-dasharray:6 3;animation:dash 1s linear infinite}
+@keyframes dash{to{stroke-dashoffset:-9}}
+/* Form Panel */
+.form-panel{width:290px;flex-shrink:0;background:#fff;border-left:1px solid #e2e8f0;display:flex;flex-direction:column;overflow:hidden}
+.fp-header{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border-bottom:1px solid #e2e8f0;border-left:4px solid #6366f1;flex-shrink:0}
+.fp-title{display:flex;align-items:center;gap:9px}
+.fp-icon{font-size:17px}
+.fp-kind{font-size:12px;font-weight:600;color:#1e293b}
+.fp-id{font-size:10px;color:#94a3b8;font-family:monospace}
+.fp-body{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:12px}
+.field{display:flex;flex-direction:column;gap:4px}
+.field-label{font-size:11px;font-weight:500;color:#374151}
+.fi{width:100%;padding:6px 9px;border:1px solid #e2e8f0;border-radius:5px;font-size:12px;color:#1e293b;background:#fff;outline:none;font-family:inherit}
+.fi:focus{border-color:#6366f1;box-shadow:0 0 0 2px rgba(99,102,241,.12)}
+.fi-ta{resize:vertical;min-height:60px}
+.fi-sel{appearance:auto}
+.close-btn{background:none;border:none;cursor:pointer;padding:3px 7px;border-radius:4px;font-size:17px;color:#94a3b8;line-height:1}
+.close-btn:hover{background:#fee2e2;color:#ef4444}
+.toggle-row{display:flex;align-items:center;gap:8px;cursor:pointer}
+.tog-cb{display:none}
+.tog-track{width:32px;height:18px;background:#e2e8f0;border-radius:9px;position:relative;transition:background .2s;flex-shrink:0}
+.tog-cb:checked+.tog-track{background:#6366f1}
+.tog-thumb{position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:50%;background:#fff;transition:transform .2s}
+.tog-cb:checked+.tog-track .tog-thumb{transform:translateX(14px)}
+.tog-label{font-size:12px;color:#374151}
+/* KV editor */
+.kv-row{display:flex;gap:5px;align-items:center;margin-bottom:5px}
+.kv-in{flex:1;min-width:0}
+.rm-btn{background:none;border:none;cursor:pointer;color:#94a3b8;font-size:15px;padding:0 4px;line-height:1}
+.rm-btn:hover{color:#ef4444}
+.add-btn{background:none;border:1px dashed #cbd5e1;color:#64748b;padding:4px 8px;border-radius:4px;cursor:pointer;font-size:11px;width:100%;transition:all .15s}
+.add-btn:hover{background:#f1f5f9}
+/* Sim Panel */
+.sim-panel{width:290px;flex-shrink:0;background:#fff;border-left:1px solid #e2e8f0;display:flex;flex-direction:column;overflow:hidden}
+.sp-header{display:flex;align-items:flex-start;justify-content:space-between;padding:12px 14px;border-bottom:1px solid #e2e8f0;flex-shrink:0}
+.sp-title{font-size:13px;font-weight:600;color:#1e293b;margin-bottom:3px}
+.sp-badge{font-size:10px;font-weight:600;padding:2px 7px;border-radius:20px}
+.badge-ok{background:#dcfce7;color:#15803d}
+.badge-fail{background:#fee2e2;color:#dc2626}
+.sp-body{flex:1;overflow-y:auto}
+.sp-sec{padding:10px 14px;border-bottom:1px solid #f1f5f9}
+.sp-sec-title{font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.07em;margin-bottom:7px}
+.sp-err{display:flex;gap:7px;font-size:11px;padding:3px 0;line-height:1.4;color:#dc2626}
+.sp-warn{color:#d97706}
+.sp-loading{display:flex;align-items:center;gap:10px;padding:20px 14px;color:#64748b;font-size:12px}
+.spinner{width:16px;height:16px;border:2px solid #e2e8f0;border-top-color:#6366f1;border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.sim-step{display:flex;gap:8px;align-items:flex-start;padding:8px 14px;border-bottom:1px solid #f8fafc}
+.step-dot{width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:#fff;flex-shrink:0;margin-top:1px}
+.step-label{font-size:11px;font-weight:600;color:#1e293b}
+.step-msg{font-size:10px;color:#64748b;line-height:1.4;margin-top:1px}
+.sp-summary{padding:10px 14px;background:#f8fafc;font-size:11px;color:#374151;line-height:1.5}
+/* threshold */
+.thr-row{display:flex;align-items:center;gap:8px}
+.thr-in{width:65px}
+.thr-bar{flex:1;height:5px;background:#e2e8f0;border-radius:3px;overflow:hidden}
+.thr-fill{height:100%;background:linear-gradient(90deg,#10b981,#f59e0b);border-radius:3px;transition:width .3s}
+.field-hint{font-size:10px;color:#94a3b8;margin-top:2px}
+/* scrollbars */
+::-webkit-scrollbar{width:4px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:#e2e8f0;border-radius:4px}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script>
+const {useState,useCallback,useRef,useEffect,createElement:h} = React;
+
+// ── Mock API ─────────────────────────────────────────────────────────────────
+const AUTOMATIONS = [
+  {id:'send_email',label:'Send Email',params:['to','subject','body']},
+  {id:'generate_doc',label:'Generate Document',params:['template','recipient']},
+  {id:'send_slack',label:'Send Slack Message',params:['channel','message']},
+  {id:'create_ticket',label:'Create Jira Ticket',params:['project','summary']},
+  {id:'update_hrms',label:'Update HRMS Record',params:['employeeId','field','value']},
+  {id:'trigger_webhook',label:'Trigger Webhook',params:['url','payload']},
+];
+
+function delay(ms){return new Promise(r=>setTimeout(r,ms))}
+
+function validateGraph(nodes,edges){
+  const errs=[];
+  const starts=nodes.filter(n=>n.kind==='start');
+  const ends=nodes.filter(n=>n.kind==='end');
+  if(starts.length===0) errs.push({msg:'Workflow must have a Start node.',sev:'error'});
+  if(starts.length>1) errs.push({msg:'Workflow must have exactly one Start node.',sev:'error'});
+  if(ends.length===0) errs.push({msg:'Workflow must have at least one End node.',sev:'error'});
+  const conn=new Set();
+  edges.forEach(e=>{conn.add(e.from);conn.add(e.to)});
+  nodes.forEach(n=>{if(!conn.has(n.id)&&nodes.length>1) errs.push({msg:`Node "${n.label}" is disconnected.`,sev:'warning'})});
+  // cycle detection
+  const adj={};nodes.forEach(n=>adj[n.id]=[]);
+  edges.forEach(e=>{if(adj[e.from])adj[e.from].push(e.to)});
+  const vis=new Set(),stk=new Set();let cycle=false;
+  function dfs(id){if(stk.has(id)){cycle=true;return}if(vis.has(id))return;vis.add(id);stk.add(id);(adj[id]||[]).forEach(dfs);stk.delete(id)}
+  nodes.forEach(n=>dfs(n.id));
+  if(cycle) errs.push({msg:'Workflow contains a cycle.',sev:'error'});
+  return errs;
+}
+
+async function simulateWorkflow(nodes,edges){
+  await delay(700);
+  const errs=validateGraph(nodes,edges).filter(e=>e.sev==='error');
+  if(errs.length) return {success:false,steps:[],summary:'Simulation aborted.',errors:errs.map(e=>e.msg)};
+  // topo sort
+  const adj={},indeg={};
+  nodes.forEach(n=>{adj[n.id]=[];indeg[n.id]=0});
+  edges.forEach(e=>{adj[e.from].push(e.to);indeg[e.to]++});
+  const queue=nodes.filter(n=>indeg[n.id]===0).map(n=>n.id);
+  const order=[];
+  while(queue.length){const id=queue.shift();order.push(id);(adj[id]||[]).forEach(nxt=>{indeg[nxt]--;if(indeg[nxt]===0)queue.push(nxt)})}
+  const nmap=Object.fromEntries(nodes.map(n=>[n.id,n]));
+  const steps=order.map(id=>{
+    const n=nmap[id];if(!n)return null;
+    let status='success',msg='';
+    if(n.kind==='start') msg=`Workflow initiated: "${n.label}"`;
+    else if(n.kind==='task') msg=`Task assigned to ${n.assignee||'(unassigned)'}: ${n.description||n.label}`;
+    else if(n.kind==='approval'){msg=`Approval requested from ${n.approverRole||'approver'}`;if((n.autoApproveThreshold||0)>80){status='warning';msg+=` — auto-approve threshold high (${n.autoApproveThreshold}%)`}}
+    else if(n.kind==='automated') msg=`Automation triggered: ${n.actionId||'(no action)'}`;
+    else if(n.kind==='end') msg=n.endMessage||'Workflow completed.';
+    return {id,label:n.label||n.kind,status,msg};
+  }).filter(Boolean);
+  return{success:true,steps,summary:`Executed ${steps.length} step${steps.length!==1?'s':''} successfully.`,errors:[]};
+}
+
+// ── Node palette config ──────────────────────────────────────────────────────
+const PALETTE=[
+  {type:'start',    label:'Start',          icon:'▶',accent:'#10b981',desc:'Workflow entry point'},
+  {type:'task',     label:'Task',           icon:'☑',accent:'#3b82f6',desc:'Human task assignment'},
+  {type:'approval', label:'Approval',       icon:'✓',accent:'#f59e0b',desc:'Manager approval step'},
+  {type:'automated',label:'Automated Step', icon:'⚡',accent:'#8b5cf6',desc:'System-triggered action'},
+  {type:'end',      label:'End',            icon:'■',accent:'#ef4444',desc:'Workflow completion'},
+];
+const KIND_ACCENT={start:'#10b981',task:'#3b82f6',approval:'#f59e0b',automated:'#8b5cf6',end:'#ef4444'};
+const KIND_ICON={start:'▶',task:'☑',approval:'✓',automated:'⚡',end:'■'};
+const KIND_BADGE={start:'START',task:'TASK',approval:'APPROVAL',automated:'AUTOMATED',end:'END'};
+
+let UID=10;
+function uid(){return `n${++UID}`}
+function eid(){return `e${++UID}`}
+
+function defaultNode(type,pos){
+  const id=uid();
+  const base={id,kind:type,x:pos.x,y:pos.y,label:PALETTE.find(p=>p.type===type)?.label||type};
+  if(type==='start') return{...base,metadata:[]};
+  if(type==='task') return{...base,description:'',assignee:'',dueDate:'',customFields:[]};
+  if(type==='approval') return{...base,approverRole:'Manager',autoApproveThreshold:0};
+  if(type==='automated') return{...base,actionId:'',actionParams:{}};
+  if(type==='end') return{...base,endMessage:'',showSummary:false};
+  return base;
+}
+
+// ── SVG Canvas ───────────────────────────────────────────────────────────────
+const NODE_W=210, NODE_H=76;
+
+function getHandlePos(n,side){
+  if(side==='bottom') return{x:n.x+NODE_W/2,y:n.y+NODE_H};
+  if(side==='top')    return{x:n.x+NODE_W/2,y:n.y};
+}
+
+function edgePath(from,to){
+  const sx=from.x,sy=from.y,ex=to.x,ey=to.y;
+  const mx=(sx+ex)/2,my=(sy+ey)/2;
+  return `M${sx},${sy} C${sx},${my} ${ex},${my} ${ex},${ey}`;
+}
+
+function WFNode({n,selected,onClick,onDragStart,onDrag,onDragEnd}){
+  const accent=KIND_ACCENT[n.kind]||'#6366f1';
+  const handleMouseDown=(e)=>{e.stopPropagation();onDragStart(e,n.id)};
+  return h('g',{className:'wf-node',transform:`translate(${n.x},${n.y})`,onMouseDown:handleMouseDown,onClick:e=>{e.stopPropagation();onClick(n.id)}},
+    // shadow
+    h('rect',{x:2,y:2,width:NODE_W,height:NODE_H,rx:8,fill:'rgba(0,0,0,0.05)'}),
+    // main box
+    h('rect',{width:NODE_W,height:NODE_H,rx:8,fill:'#fff',stroke:selected?'#6366f1':'#e2e8f0',strokeWidth:selected?2:1}),
+    // accent strip
+    h('rect',{width:4,height:NODE_H,rx:8,fill:accent,style:{clipPath:'inset(0 0 0 0 round 8px 0 0 8px)'}}),
+    // badge pill
+    h('rect',{x:NODE_W-70,y:8,width:60,height:15,rx:6,fill:accent+'22'}),
+    h('text',{x:NODE_W-40,y:19,textAnchor:'middle',fontSize:8,fontWeight:700,fill:accent,letterSpacing:'0.07em'},KIND_BADGE[n.kind]),
+    // icon
+    h('text',{x:14,y:22,fontSize:13,fill:accent},KIND_ICON[n.kind]),
+    // title
+    h('text',{x:14,y:43,fontSize:12,fontWeight:600,fill:'#1e293b',style:{maxWidth:160}},
+      (n.label||n.kind).slice(0,26)+(n.label?.length>26?'…':'')),
+    // subtitle
+    h('text',{x:14,y:58,fontSize:10,fill:'#64748b'},
+      n.kind==='task' ? (n.assignee?`→ ${n.assignee}`:'')+'' :
+      n.kind==='approval' ? (n.approverRole||'') :
+      n.kind==='automated' ? (n.actionId||'') :
+      n.kind==='end' ? (n.endMessage||'').slice(0,28) : ''),
+    // bottom handle dot
+    n.kind!=='end'&&h('circle',{cx:NODE_W/2,cy:NODE_H,r:5,fill:'#fff',stroke:'#6366f1',strokeWidth:1.5}),
+    // top handle dot
+    n.kind!=='start'&&h('circle',{cx:NODE_W/2,cy:0,r:5,fill:'#fff',stroke:'#6366f1',strokeWidth:1.5}),
+  );
+}
+
+function Canvas({nodes,edges,selectedId,onSelectNode,onUpdateNodes,onAddEdge,onDeleteNode,onDeleteEdge}){
+  const svgRef=useRef(null);
+  const dragging=useRef(null); // {nodeId, offsetX, offsetY}
+  const connecting=useRef(null); // {fromId, fromX, fromY}
+  const [connLine,setConnLine]=useState(null);
+  const [viewBox,setViewBox]=useState('0 0 900 600');
+  const [pan,setPan]=useState({x:0,y:0});
+  const panRef=useRef(null);
+
+  // SVG coordinate helper
+  function svgCoords(e){
+    const svg=svgRef.current;
+    const pt=svg.createSVGPoint();
+    pt.x=e.clientX; pt.y=e.clientY;
+    return pt.matrixTransform(svg.getScreenCTM().inverse());
+  }
+
+  function onMouseDown(e){
+    if(e.target===svgRef.current||e.target.tagName==='rect'&&e.target.className.baseVal==='canvas-bg'){
+      panRef.current={startX:e.clientX,startY:e.clientY,pan:{...pan}};
+    }
+  }
+
+  function onNodeDragStart(e,nodeId){
+    const c=svgCoords(e);
+    const n=nodes.find(n=>n.id===nodeId);
+    dragging.current={nodeId,offX:c.x-n.x,offY:c.y-n.y};
+  }
+
+  function onMouseMove(e){
+    if(dragging.current){
+      const c=svgCoords(e);
+      onUpdateNodes(nodes.map(n=>n.id===dragging.current.nodeId?{...n,x:c.x-dragging.current.offX,y:c.y-dragging.current.offY}:n));
+    }
+    if(connecting.current){
+      const c=svgCoords(e);
+      setConnLine({x1:connecting.current.x,y1:connecting.current.y,x2:c.x,y2:c.y});
+    }
+    if(panRef.current){
+      const dx=e.clientX-panRef.current.startX;
+      const dy=e.clientY-panRef.current.startY;
+      setPan({x:panRef.current.pan.x+dx,y:panRef.current.pan.y+dy});
+    }
+  }
+
+  function onMouseUp(e){
+    dragging.current=null;
+    connecting.current=null;
+    setConnLine(null);
+    panRef.current=null;
+  }
+
+  // Handle clicks on handle circles to start connections
+  function onHandleClick(e,nodeId,side){
+    e.stopPropagation();
+    const pos=getHandlePos(nodes.find(n=>n.id===nodeId),side);
+    if(!connecting.current){
+      connecting.current={fromId:nodeId,x:pos.x,y:pos.y};
+    } else {
+      if(connecting.current.fromId!==nodeId){
+        onAddEdge(connecting.current.fromId,nodeId);
+      }
+      connecting.current=null;setConnLine(null);
+    }
+  }
+
+  const transform=`translate(${pan.x},${pan.y})`;
+
+  return h('svg',{ref:svgRef,className:'canvas-svg',onMouseDown,onMouseMove,onMouseUp,
+    onClick:()=>{onSelectNode(null);connecting.current=null;setConnLine(null)},
+    style:{cursor:panRef.current?'grabbing':'default'}},
+    h('defs',null,
+      h('marker',{id:'arrow',markerWidth:8,markerHeight:8,refX:6,refY:3,orient:'auto'},
+        h('path',{d:'M0,0 L0,6 L8,3 z',fill:'#94a3b8'})),
+      h('marker',{id:'arrow-live',markerWidth:8,markerHeight:8,refX:6,refY:3,orient:'auto'},
+        h('path',{d:'M0,0 L0,6 L8,3 z',fill:'#6366f1'}))),
+    h('rect',{className:'canvas-bg',width:'100%',height:'100%',fill:'transparent'}),
+    h('g',{transform},
+      // grid dots
+      h('pattern',{id:'dots',x:0,y:0,width:20,height:20,patternUnits:'userSpaceOnUse'},
+        h('circle',{cx:1,cy:1,r:1,fill:'#e2e8f0'})),
+      h('rect',{width:3000,height:3000,x:-1000,y:-1000,fill:'url(#dots)'}),
+      // edges
+      edges.map(e=>{
+        const fn=nodes.find(n=>n.id===e.from);
+        const tn=nodes.find(n=>n.id===e.to);
+        if(!fn||!tn) return null;
+        const fp=getHandlePos(fn,'bottom');
+        const tp=getHandlePos(tn,'top');
+        return h('path',{key:e.id,d:edgePath(fp,tp),className:'edge edge-animated',markerEnd:'url(#arrow)',
+          onClick:ev=>{ev.stopPropagation();if(confirm('Delete this connection?'))onDeleteEdge(e.id)}});
+      }),
+      // live connection line
+      connLine&&h('line',{x1:connLine.x1,y1:connLine.y1,x2:connLine.x2,y2:connLine.y2,stroke:'#6366f1',strokeWidth:1.5,strokeDasharray:'4 3',markerEnd:'url(#arrow-live)'}),
+      // nodes
+      nodes.map(n=>h(WFNode,{key:n.id,n,selected:n.id===selectedId,onClick:onSelectNode,onDragStart:onNodeDragStart})),
+    )
+  );
+}
+
+// ── Forms ─────────────────────────────────────────────────────────────────────
+function KVEditor({pairs,onChange}){
+  const add=()=>onChange([...pairs,{k:'',v:''}]);
+  const rm=(i)=>onChange(pairs.filter((_,j)=>j!==i));
+  const upd=(i,f,v)=>onChange(pairs.map((p,j)=>j===i?{...p,[f]:v}:p));
+  return h('div',null,
+    pairs.map((p,i)=>h('div',{key:i,className:'kv-row'},
+      h('input',{className:'fi kv-in',placeholder:'Key',value:p.k,onChange:e=>upd(i,'k',e.target.value)}),
+      h('input',{className:'fi kv-in',placeholder:'Value',value:p.v,onChange:e=>upd(i,'v',e.target.value)}),
+      h('button',{className:'rm-btn',onClick:()=>rm(i)},'×'),
+    )),
+    h('button',{className:'add-btn',onClick:add},'+ Add field'),
+  );
+}
+
+function F({label,children}){
+  return h('div',{className:'field'},h('label',{className:'field-label'},label),children);
+}
+
+function NodeForm({node,automations,onChange}){
+  const up=partial=>onChange({...node,...partial});
+  if(node.kind==='start') return h('div',{style:{display:'flex',flexDirection:'column',gap:12}},
+    h(F,{label:'Start title'},h('input',{className:'fi',value:node.label,onChange:e=>up({label:e.target.value}),placeholder:'e.g. Start Onboarding'})),
+    h(F,{label:'Metadata fields'},h(KVEditor,{pairs:node.metadata||[],onChange:metadata=>up({metadata})})),
+  );
+  if(node.kind==='task') return h('div',{style:{display:'flex',flexDirection:'column',gap:12}},
+    h(F,{label:'Title'},h('input',{className:'fi',value:node.label,onChange:e=>up({label:e.target.value}),placeholder:'Task name'})),
+    h(F,{label:'Description'},h('textarea',{className:'fi fi-ta',value:node.description||'',onChange:e=>up({description:e.target.value}),rows:3,placeholder:'Describe the task…'})),
+    h(F,{label:'Assignee'},h('input',{className:'fi',value:node.assignee||'',onChange:e=>up({assignee:e.target.value}),placeholder:'e.g. HR Coordinator'})),
+    h(F,{label:'Due date'},h('input',{className:'fi',type:'date',value:node.dueDate||'',onChange:e=>up({dueDate:e.target.value})})),
+    h(F,{label:'Custom fields'},h(KVEditor,{pairs:node.customFields||[],onChange:customFields=>up({customFields})})),
+  );
+  if(node.kind==='approval'){
+    const roles=['Manager','HRBP','Director','VP','C-Level'];
+    return h('div',{style:{display:'flex',flexDirection:'column',gap:12}},
+      h(F,{label:'Title'},h('input',{className:'fi',value:node.label,onChange:e=>up({label:e.target.value}),placeholder:'Approval step name'})),
+      h(F,{label:'Approver role'},h('select',{className:'fi fi-sel',value:node.approverRole||'',onChange:e=>up({approverRole:e.target.value})},
+        h('option',{value:''},'Select role…'),...roles.map(r=>h('option',{key:r,value:r},r)))),
+      h(F,{label:'Auto-approve threshold (%)'},
+        h('div',{className:'thr-row'},
+          h('input',{className:'fi thr-in',type:'number',min:0,max:100,value:node.autoApproveThreshold||0,onChange:e=>up({autoApproveThreshold:Number(e.target.value)})}),
+          h('div',{className:'thr-bar'},h('div',{className:'thr-fill',style:{width:`${node.autoApproveThreshold||0}%`}})),
+        ),
+        h('p',{className:'field-hint'},'0 = manual review always required'),
+      ),
+    );
+  }
+  if(node.kind==='automated'){
+    const selAction=automations.find(a=>a.id===node.actionId);
+    const changeAction=id=>{
+      const a=automations.find(x=>x.id===id);
+      const p={};(a?.params||[]).forEach(k=>{p[k]=(node.actionParams||{})[k]||''});
+      up({actionId:id,actionParams:p});
+    };
+    return h('div',{style:{display:'flex',flexDirection:'column',gap:12}},
+      h(F,{label:'Title'},h('input',{className:'fi',value:node.label,onChange:e=>up({label:e.target.value}),placeholder:'Automation label'})),
+      h(F,{label:'Action'},h('select',{className:'fi fi-sel',value:node.actionId||'',onChange:e=>changeAction(e.target.value)},
+        h('option',{value:''},'Select action…'),...automations.map(a=>h('option',{key:a.id,value:a.id},a.label)))),
+      selAction&&selAction.params.map(p=>h(F,{key:p,label:p.charAt(0).toUpperCase()+p.slice(1)},
+        h('input',{className:'fi',value:(node.actionParams||{})[p]||'',onChange:e=>up({actionParams:{...(node.actionParams||{}),[p]:e.target.value}}),placeholder:`Enter ${p}…`})
+      )),
+    );
+  }
+  if(node.kind==='end') return h('div',{style:{display:'flex',flexDirection:'column',gap:12}},
+    h(F,{label:'Title'},h('input',{className:'fi',value:node.label,onChange:e=>up({label:e.target.value}),placeholder:'End step name'})),
+    h(F,{label:'End message'},h('textarea',{className:'fi fi-ta',value:node.endMessage||'',onChange:e=>up({endMessage:e.target.value}),rows:3,placeholder:'Final message…'})),
+    h(F,{label:'Show summary'},
+      h('label',{className:'toggle-row'},
+        h('input',{type:'checkbox',className:'tog-cb',checked:!!node.showSummary,onChange:e=>up({showSummary:e.target.checked})}),
+        h('div',{className:'tog-track'},h('div',{className:'tog-thumb'})),
+        h('span',{className:'tog-label'},node.showSummary?'Summary enabled':'Summary disabled'),
+      )
+    ),
+  );
+  return null;
+}
+
+// ── Simulation Panel Component ────────────────────────────────────────────────
+const STATUS_COLOR={success:'#10b981',warning:'#f59e0b',error:'#ef4444',skipped:'#9ca3af'};
+const STATUS_ICON={success:'✓',warning:'⚠',error:'✕',skipped:'–'};
+
+function SimPanel({result,loading,valErrs,onClose}){
+  return h('div',{className:'sim-panel'},
+    h('div',{className:'sp-header'},
+      h('div',null,
+        h('p',{className:'sp-title'},'Workflow Simulation'),
+        result&&h('span',{className:`sp-badge ${result.success?'badge-ok':'badge-fail'}`},result.success?'✓ Passed':'✕ Failed'),
+      ),
+      h('button',{className:'close-btn',onClick:onClose},'×'),
+    ),
+    h('div',{className:'sp-body'},
+      valErrs.length>0&&h('div',{className:'sp-sec'},
+        h('p',{className:'sp-sec-title'},'Validation'),
+        valErrs.map((e,i)=>h('div',{key:i,className:`sp-err ${e.sev==='warning'?'sp-warn':''}`},
+          h('span',null,e.sev==='error'?'✕':'⚠'),h('span',null,e.msg))),
+      ),
+      loading&&h('div',{className:'sp-loading'},h('div',{className:'spinner'}),h('span',null,'Running simulation…')),
+      result&&!loading&&h('div',null,
+        result.errors.length>0&&h('div',{className:'sp-sec'},
+          h('p',{className:'sp-sec-title'},'Errors'),
+          result.errors.map((e,i)=>h('div',{key:i,className:'sp-err'},h('span',null,'✕'),h('span',null,e))),
+        ),
+        result.steps.length>0&&h('div',null,
+          h('div',{className:'sp-sec'},h('p',{className:'sp-sec-title'},'Execution Log')),
+          result.steps.map((s,i)=>h('div',{key:i,className:'sim-step'},
+            h('div',{className:'step-dot',style:{background:STATUS_COLOR[s.status]}},STATUS_ICON[s.status]),
+            h('div',null,h('p',{className:'step-label'},s.label),h('p',{className:'step-msg'},s.msg)),
+          )),
+        ),
+        h('div',{className:'sp-summary'},result.summary),
+      ),
+    ),
+  );
+}
+
+// ── Main App ─────────────────────────────────────────────────────────────────
+function App(){
+  const [nodes,setNodes]=useState([
+    {id:'s1',kind:'start',x:300,y:40,label:'Start Onboarding',metadata:[]},
+    {id:'t1',kind:'task',x:300,y:160,label:'Collect Documents',description:'Gather all required onboarding documents.',assignee:'HR Coordinator',dueDate:'',customFields:[]},
+    {id:'a1',kind:'approval',x:300,y:290,label:'Manager Approval',approverRole:'Manager',autoApproveThreshold:0},
+    {id:'au1',kind:'automated',x:300,y:410,label:'Send Welcome Email',actionId:'send_email',actionParams:{to:'employee@co.com',subject:'Welcome!',body:''}},
+    {id:'e1',kind:'end',x:300,y:530,label:'Onboarding Complete',endMessage:'Employee successfully onboarded.',showSummary:true},
+  ]);
+  const [edges,setEdges]=useState([
+    {id:'ed1',from:'s1',to:'t1'},{id:'ed2',from:'t1',to:'a1'},
+    {id:'ed3',from:'a1',to:'au1'},{id:'ed4',from:'au1',to:'e1'},
+  ]);
+  const [selId,setSelId]=useState(null);
+  const [showSim,setShowSim]=useState(false);
+  const [simResult,setSimResult]=useState(null);
+  const [simLoading,setSimLoading]=useState(false);
+  const [valErrs,setValErrs]=useState([]);
+  const canvasRef=useRef(null);
+
+  const selNode=nodes.find(n=>n.id===selId);
+
+  function updateNode(id,upd){setNodes(ns=>ns.map(n=>n.id===id?{...n,...upd}:n))}
+  function addEdge(from,to){setEdges(es=>[...es,{id:eid(),from,to}])}
+  function delEdge(id){setEdges(es=>es.filter(e=>e.id!==id))}
+  function delNode(id){setNodes(ns=>ns.filter(n=>n.id!==id));setEdges(es=>es.filter(e=>e.from!==id&&e.to!==id));setSelId(null)}
+
+  function onDragOver(e){e.preventDefault();e.dataTransfer.dropEffect='move'}
+  function onDrop(e){
+    e.preventDefault();
+    const type=e.dataTransfer.getData('application/reactflow');
+    if(!type)return;
+    const rect=canvasRef.current.getBoundingClientRect();
+    const x=e.clientX-rect.left-NODE_W/2;
+    const y=e.clientY-rect.top-NODE_H/2;
+    const n=defaultNode(type,{x,y});
+    setNodes(prev=>[...prev,n]);setSelId(n.id);
+  }
+
+  async function runSim(){
+    setValErrs([]);
+    const errs=validateGraph(nodes,edges);
+    setValErrs(errs);
+    setShowSim(true);setSimLoading(true);setSimResult(null);
+    const res=await simulateWorkflow(nodes,edges);
+    setSimResult(res);setSimLoading(false);
+  }
+
+  function handleValidate(){
+    const errs=validateGraph(nodes,edges);
+    setValErrs(errs);setShowSim(true);setSimResult(null);
+  }
+
+  function exportWF(){
+    const blob=new Blob([JSON.stringify({nodes,edges},null,2)],{type:'application/json'});
+    const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='workflow.json';a.click();
+  }
+  function importWF(){
+    const inp=document.createElement('input');inp.type='file';inp.accept='.json';
+    inp.onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=ev=>{try{const d=JSON.parse(ev.target.result);setNodes(d.nodes);setEdges(d.edges);setSelId(null);}catch{alert('Invalid JSON')}};r.readAsText(f)};
+    inp.click();
+  }
+
+  return h('div',{className:'app'},
+    // Toolbar
+    h('header',{className:'toolbar'},
+      h('div',{className:'brand'},
+        h('span',{className:'logo'},'◈'),
+        h('div',null,h('p',{className:'brand-title'},'HR Workflow Designer'),h('p',{className:'brand-sub'},'Tredence Studio')),
+      ),
+      h('div',{className:'actions'},
+        h('button',{className:'btn',onClick:handleValidate},'⚙ Validate'),
+        h('button',{className:'btn btn-primary',onClick:runSim},'▶ Run Simulation'),
+        h('div',{className:'divider'}),
+        h('button',{className:'btn',onClick:importWF},'↑ Import'),
+        h('button',{className:'btn',onClick:exportWF},'↓ Export'),
+        selNode&&h('button',{className:'btn',onClick:()=>delNode(selId),style:{borderColor:'#fca5a5',color:'#dc2626'}},'🗑 Delete'),
+      ),
+    ),
+    // Main
+    h('div',{className:'main'},
+      // Palette
+      h('aside',{className:'palette'},
+        h('p',{className:'sec-title'},'Node Types'),
+        h('p',{className:'sec-hint'},'Drag onto canvas'),
+        h('div',{className:'pal-list'},
+          PALETTE.map(p=>h('div',{key:p.type,className:'pal-item',style:{borderLeftColor:p.accent},
+            draggable:true,onDragStart:e=>{e.dataTransfer.setData('application/reactflow',p.type);e.dataTransfer.effectAllowed='move'}},
+            h('span',{className:'pal-icon',style:{color:p.accent}},p.icon),
+            h('div',null,h('p',{className:'pal-label'},p.label),h('p',{className:'pal-desc'},p.desc)),
+          ))
+        ),
+        h('div',{style:{marginTop:20,padding:'10px',background:'#f8fafc',borderRadius:6,border:'1px solid #e2e8f0'}},
+          h('p',{style:{fontSize:10,color:'#94a3b8',fontWeight:600,marginBottom:4}},'TIPS'),
+          h('p',{style:{fontSize:10,color:'#94a3b8',lineHeight:1.5}},'• Click node to edit\n• Connect via handle dots\n• Click edge to delete\n• Delete key removes node'),
+        ),
+      ),
+      // Canvas
+      h('div',{ref:canvasRef,className:'canvas-wrap',onDragOver,onDrop},
+        h(Canvas,{nodes,edges,selectedId:selId,onSelectNode:setSelId,onUpdateNodes:setNodes,onAddEdge:addEdge,onDeleteNode:delNode,onDeleteEdge:delEdge}),
+        nodes.length===0&&h('div',{className:'canvas-tip'},'Drag nodes from the left panel to begin'),
+      ),
+      // Form panel
+      selNode&&!showSim&&h('aside',{className:'form-panel'},
+        h('div',{className:'fp-header',style:{borderLeftColor:KIND_ACCENT[selNode.kind]}},
+          h('div',{className:'fp-title'},
+            h('span',{className:'fp-icon'},KIND_ICON[selNode.kind]),
+            h('div',null,h('p',{className:'fp-kind'},(selNode.kind.charAt(0).toUpperCase()+selNode.kind.slice(1))+' Node'),h('p',{className:'fp-id'},'ID: '+selNode.id)),
+          ),
+          h('button',{className:'close-btn',onClick:()=>setSelId(null)},'×'),
+        ),
+        h('div',{className:'fp-body'},
+          h(NodeForm,{node:selNode,automations:AUTOMATIONS,onChange:upd=>updateNode(selId,upd)}),
+        ),
+      ),
+      // Simulation panel
+      showSim&&h(SimPanel,{result:simResult,loading:simLoading,valErrs,onClose:()=>{setShowSim(false);setSimResult(null);setValErrs([])}}),
+    ),
+  );
+}
+
+const root=ReactDOM.createRoot(document.getElementById('root'));
+root.render(h(App,null));
+</script>
+</body>
+</html>
