@@ -1,5 +1,8 @@
 # HR Workflow Designer
-**Tredence Studio — Full Stack Engineering Intern Case Study**
+
+🚀 Live Demo: https://tredence-fullstack-casestudy-1rqz4uhol-kshitija1888s-projects.vercel.app
+
+Tredence Studio — Full Stack Engineering Intern Case Study
 
 A functional prototype for an HR Workflow Designer module where HR admins can visually create, configure, and simulate internal workflows such as onboarding, leave approval, or document verification.
 
